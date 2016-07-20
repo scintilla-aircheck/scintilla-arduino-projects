@@ -2,11 +2,19 @@
 
 ## Protobufs
 
-### 1) Download NanoPB
+### 1) Download and install protobufs 2.6.1 from Google
+
+https://github.com/google/protobuf/releases/tag/v2.6.1
+
+```
+./configure && make && make install
+```
+
+### 2) Download NanoPB
 
 http://koti.kapsi.fi/jpa/nanopb/download/
 
-### 2) Create your .proto file
+### 3) Create your .proto file
 
 ```
 // A very simple protocol definition, consisting of only
@@ -19,15 +27,15 @@ message SimpleMessage {
 }
 ```
 
-### 3) Compile your .proto with NanoPB protoc
+### 4) Compile your .proto with NanoPB protoc
 
 /path/to/nanopb/generator-bin/protoc -I=/path/to/your/.proto/file's/folder/ --nanopb_out=/path/to/output/folder/ /path/to/your/.proto/file's/folder/your-proto-file.proto
 
-### 4) Add the generated .c and .h files to your Arduino project directory
+### 5) Add the generated .c and .h files to your Arduino project directory
 
-### 5) Add NanoPB to your Arduino libraries folder
+### 6) Add NanoPB to your Arduino libraries folder
 
-### 6) Include the required NanoPB files
+### 7) Include the required NanoPB files
 
 ```
 #include <pb_common.h>
@@ -36,11 +44,11 @@ message SimpleMessage {
 #include <pb.h>
 ```
 
-### 7) Include your generated .h file
+### 8) Include your generated .h file
 
 ```
 #include "your-proto.pb.h"
 ```
 
-### 8) Use your protobuf!
+### 9) Use your protobuf!
 
