@@ -1,54 +1,65 @@
-/*
-  Software serial multple serial test
+#include <stdio.h>
+#include <pb_common.h>
+#include <pb_encode.h>
+#include <pb_decode.h>
+#include <pb.h>
+#include "sensor_data.pb.h"
+#include "eeprom.h"
 
- Receives from the hardware serial, sends to software serial.
- Receives from software serial, sends to hardware serial.
-
- The circuit:
- * RX is digital pin 10 (connect to TX of other device)
- * TX is digital pin 11 (connect to RX of other device)
-
- Note:
- Not all pins on the Mega and Mega 2560 support change interrupts,
- so only the following can be used for RX:
- 10, 11, 12, 13, 50, 51, 52, 53, 62, 63, 64, 65, 66, 67, 68, 69
-
- Not all pins on the Leonardo support change interrupts,
- so only the following can be used for RX:
- 8, 9, 10, 11, 14 (MISO), 15 (SCK), 16 (MOSI).
-
- created back in the mists of time
- modified 25 May 2012
- by Tom Igoe
- based on Mikal Hart's example
-
- This example code is in the public domain.
-
- */
-#include <SoftwareSerial.h>
-
-SoftwareSerial mySerial(8, 9); // RX, TX
+SensorDataMessage sensor_data_message = SensorDataMessage_init_zero;
 
 void setup() {
-  // Open serial communications and wait for port to open:
   Serial.begin(9600);
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
 
-
-  Serial.println("Goodnight moon!");
-
-  // set the data rate for the SoftwareSerial port
-  mySerial.begin(4800);
-  mySerial.println("Hello, world?");
+  Serial.println("Serial connected.");
 }
 
-void loop() { // run over and over
-  if (mySerial.available()) {
-    Serial.write(mySerial.read());
-  }
-  if (Serial.available()) {
-    mySerial.write(Serial.read());
-  }
+void loop() {
+  // put your main code here, to run repeatedly:
+  readSensors(sensor_data_message);
+  Serial.print("Lucky Number: ");
+  Serial.println(sensor_data_message.lucky_number);
+
+  writeSensorDataToStorage(sensor_data_message);
+
+  delay(1000);
 }
+
+SensorDataMessage readSensors(SensorDataMessage &message) {
+  message.lucky_number += 1;
+}
+
+int writeSensorDataToStorage(SensorDataMessage &message) {
+  byte buffer[1024];  // TODO change the buffer size to accomodate the sensor data
+  size_t message_length;
+  bool status;
+
+  pb_ostream_t stream = pb_ostream_from_buffer(buffer, sizeof(buffer));
+
+  /* Now we are ready to encode the message! */
+  status = pb_encode(&stream, SensorDataMessage_fields, &message);
+  message_length = stream.bytes_written;
+    
+  /* Then just check for any errors.. */
+  if( !status ) {
+      Serial.print("Encoding failed: ");
+      Serial.println(PB_GET_ERROR(&stream));
+      return 1;
+  }
+
+  Serial.print("Message Length: ");
+  Serial.println(message_length);
+  Serial.print("Buffer: ");
+  Serial.println((char*)(buffer));
+
+  writeSensorData((byte*)buffer, message_length);
+}
+
+// send all unsent sensor data to the api
+void sendSensorDataToAPI() {
+  
+}
+
