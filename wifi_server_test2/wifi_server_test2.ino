@@ -59,6 +59,13 @@ void handleRoot() {
 int numWifi = 1;  // number of defined wifi ssid/pwd pairs
 const char* ssidi;
 const char* pwdi;
+const char* geo = "-33.8745828,151.2067465";  // Sydney Town Hall
+// Event Hub
+const char* host = "makerdenww-ns.servicebus.windows.net";
+const char* key = "Z2aUC4jbHD3aphn8pIMmOhiqf9/ns7o/SvPSixKKCEY=";
+const char* id = "D1";
+
+
 
 const int BufferLen = 510;  // max eprom length, minus 2 for data length
 char buffer[BufferLen];
@@ -181,11 +188,6 @@ void doConfigure(){
   server.send(200, "text/html", content);
 }
 
-void doStatus() {
-  //TODO
-  return;
-}
-
 void setup ( void ) {
 	pinMode ( led, OUTPUT );
 	digitalWrite ( led, 0 );
@@ -196,10 +198,10 @@ void setup ( void ) {
 		Serial.println ( "MDNS responder started" );
 	}
 
-	server.on ( "/", handleRoot );
+	server.on ( "/setup", handleRoot );
 	server.on ( "/test.svg", drawGraph );
 	server.on("/configure", doConfigure );
-	server.on("/status", doStatus);
+	server.on("/", doStatus);
 	server.onNotFound ( handleNotFound );
 	server.begin();
 	Serial.println ( "HTTP server started" );
@@ -226,3 +228,69 @@ void drawGraph() {
 
 	server.send ( 200, "image/svg+xml", out);
 }
+
+
+void doStatus() {
+  
+  String out = "<html><head><title>Scintilla Status</title>";
+  out += "<style>body { background-color: #cccccc; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }</style></head><body>";
+  out += "<h1>Scintilla Configuration</h1>\n";
+  
+  StaticJsonBuffer<1000> jsonBuffer;
+  int address = 2;
+  length = word(EEPROM.read(0), EEPROM.read(1));
+  for (address = 2; address < length + 2; address++) {
+    buffer[address - 2] = EEPROM.read(address);
+  }
+  buffer[address - 2] = '\0';
+  Serial.println(buffer);
+
+  JsonObject& root = jsonBuffer.parseObject(buffer);
+  if (!root.success())
+  {
+    Serial.println("parseObject() failed");
+    out += "Current configuration invalid! Please set the configuration.\r\n";
+    
+  }
+  else {
+    numWifi = root["wifi"];
+    host = root["host"];
+    key = root["key"];
+    id = root["id"];
+    geo = root["geo"];
+  
+    Serial.println(numWifi);
+    for (size_t i = 0; i < numWifi; i++)
+    {
+      ssidi = root["ssid"][i];
+      pwdi = root["pwd"][i];
+      Serial.print("["); Serial.print(i); Serial.print("]");
+      Serial.print(ssidi); Serial.print(" - ");
+      out += "SSID: " + (String)ssidi + "<br>";
+      out += "Password" + (String)"*********" + "<br>";
+      if (WiFi.status() != WL_CONNECTED) 
+        out += "Status: DISCONNECTED!!!\r\n";
+      else {
+        out += "Status: CONNECTED!!!\r\n";
+        out += "IP Address: " + (String)WiFi.localIP() + "\r\n";
+        
+      }
+      Serial.println(pwdi);
+    }
+    Serial.println(host);
+    Serial.println(key);
+    Serial.println(id);
+    Serial.println(geo);
+    out += "Azure Info:<br>";
+    out += "Host: " + (String)host + "<br";
+    out += "Key: " + (String)key + "<br>";
+    out += "id: " + (String)id + "<br>";
+    out += "Geo: " + (String)geo + "<br>";
+  }
+  out += "<a href=\"/setup\">Edit configuration</a>";
+  out += "</body></html>";
+  server.send ( 200, "text/html", out);
+  
+}
+
+
