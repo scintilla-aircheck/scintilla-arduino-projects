@@ -65,7 +65,7 @@ void writeTriplicatedWordToBufferAtNextLocation(unsigned int data, unsigned int 
     value_temp = readEEPROM(disk1, address, 2, buffer_start, buffer_end);
     value = value_temp[1] | value_temp[0] << 8;
     free(value_temp);
-
+    // TODO if it never finds a value, we need to write one pointing to beginning the sensor data buffer
     if( value != 0 ) {
       // put the head in triplicate in the 6 bytes after the ones we are about to erase
       // erase the 6 bytes at the address we are looking at
